@@ -37,18 +37,7 @@ real applications step by step.
 -   **Language:** Go (Golang)\
 -   **Backend:** net/http / frameworks (Gin, Echo -- optional)\
 -   **Database:** SQL / NoSQL\
--   **Tools:** Git, Docker (optional)
-
-------------------------------------------------------------------------
-
-## 📂 Project Structure
-
-    go-backend-mastery/
-    │── docs/              
-    │── examples/          
-    │── projects/          
-    │── assets/            
-    │── index.html         
+-   **Tools:** Git, Docker (optional)        
 
 ------------------------------------------------------------------------
 
