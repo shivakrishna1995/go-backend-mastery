@@ -1,0 +1,957 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Go Learning Guide</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:system-ui,sans-serif;background:#0f1117;color:#e2e8f0;line-height:1.6}
+header{background:#1a1d2e;border-bottom:1px solid #2d3148;padding:20px 32px;display:flex;align-items:center;gap:12px}
+.logo{background:#00b894;color:#fff;font-size:20px;font-weight:700;width:40px;height:40px;border-radius:8px;display:flex;align-items:center;justify-content:center}
+header h1{font-size:20px;font-weight:600;color:#fff}
+header span{font-size:13px;color:#64748b;margin-left:8px}
+.layout{display:grid;grid-template-columns:260px 1fr;min-height:calc(100vh - 61px)}
+.sidebar{background:#13151f;border-right:1px solid #1e2130;padding:16px 0;overflow-y:auto;position:sticky;top:0;height:calc(100vh - 61px)}
+.stage-label{font-size:10px;font-weight:600;letter-spacing:.08em;color:#475569;padding:12px 20px 6px;text-transform:uppercase}
+.nav-item{display:flex;align-items:center;gap:10px;padding:8px 20px;cursor:pointer;transition:background .15s;border-left:2px solid transparent;font-size:13px;color:#94a3b8}
+.nav-item:hover{background:#1e2130;color:#e2e8f0}
+.nav-item.active{background:#1e2130;border-left-color:#00b894;color:#fff}
+.nav-num{width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;flex-shrink:0;background:#1e2130;color:#64748b}
+.nav-item.active .nav-num{background:#00b894;color:#fff}
+.nav-item.done .nav-num{background:#065f46;color:#6ee7b7}
+.content{padding:32px 40px;max-width:860px}
+.stage-header{display:flex;align-items:center;gap:12px;margin-bottom:8px}
+.stage-badge{padding:3px 12px;border-radius:20px;font-size:11px;font-weight:600}
+.s1{background:#064e3b;color:#6ee7b7}
+.s2{background:#1e3a5f;color:#93c5fd}
+.s3{background:#3b1f5e;color:#c4b5fd}
+.s4{background:#7c2d12;color:#fdba74}
+.topic-title{font-size:26px;font-weight:700;color:#fff;margin-bottom:6px}
+.topic-sub{color:#64748b;font-size:14px;margin-bottom:28px}
+.concept{margin-bottom:28px}
+.concept h3{font-size:15px;font-weight:600;color:#e2e8f0;margin-bottom:10px;display:flex;align-items:center;gap:8px}
+.concept h3::before{content:'';width:3px;height:16px;background:#00b894;border-radius:2px;display:inline-block}
+pre{background:#0d0f18;border:1px solid #1e2130;border-radius:8px;padding:16px;overflow-x:auto;font-size:13px;line-height:1.7;margin-bottom:12px}
+.kw{color:#c792ea}.fn{color:#82aaff}.str{color:#c3e88d}.cm{color:#546e7a;font-style:italic}.num{color:#f78c6c}.type{color:#ffcb6b}
+.note{background:#0d2218;border:1px solid #065f46;border-radius:8px;padding:12px 16px;font-size:13px;color:#6ee7b7;margin-bottom:16px}
+.note strong{color:#a7f3d0}
+.warn{background:#1c1007;border:1px solid #78350f;border-radius:8px;padding:12px 16px;font-size:13px;color:#fbbf24;margin-bottom:16px}
+table{width:100%;border-collapse:collapse;margin-bottom:16px;font-size:13px}
+th{text-align:left;padding:8px 12px;background:#1a1d2e;color:#94a3b8;font-weight:500;border-bottom:1px solid #1e2130}
+td{padding:8px 12px;border-bottom:1px solid #1e2130;color:#cbd5e1}
+td:first-child{color:#82aaff;font-family:monospace}
+.nav-btns{display:flex;gap:10px;margin-top:32px;padding-top:24px;border-top:1px solid #1e2130}
+.btn{padding:8px 20px;border-radius:6px;font-size:13px;font-weight:500;cursor:pointer;border:none;transition:all .15s}
+.btn-prev{background:#1e2130;color:#94a3b8}.btn-prev:hover{background:#2d3148;color:#fff}
+.btn-next{background:#00b894;color:#fff}.btn-next:hover{background:#00a381}
+.btn:disabled{opacity:.3;cursor:not-allowed}
+.progress{height:3px;background:#1e2130;position:fixed;top:61px;left:0;right:0;z-index:10}
+.progress-bar{height:100%;background:#00b894;transition:width .3s}
+.tag-row{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:20px}
+.tag{padding:3px 10px;border-radius:20px;font-size:11px;font-weight:500;background:#064e3b;color:#6ee7b7}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">Go</div>
+  <h1>Go Backend Mastery</h1>
+  <span>For Node.js developers &middot; 21 topics &middot; 4 stages</span>
+</header>
+<div class="progress"><div class="progress-bar" id="prog"></div></div>
+<div class="layout">
+  <nav class="sidebar" id="sidebar"></nav>
+  <main class="content" id="content"></main>
+</div>
+
+<script>
+var stages = [
+  {label:"Stage 1 — Foundations", badge:"s1", badgeText:"Foundations"},
+  {label:"Stage 2 — Core Concepts", badge:"s2", badgeText:"Core Concepts"},
+  {label:"Stage 3 — Concurrency", badge:"s3", badgeText:"Concurrency"},
+  {label:"Stage 4 — Backend API", badge:"s4", badgeText:"Backend API"}
+];
+
+function c(cls,text){return '<span class="'+cls+'">'+text+'</span>';}
+var kw=function(t){return c('kw',t);};
+var fn=function(t){return c('fn',t);};
+var st=function(t){return c('str',t);};
+var cm=function(t){return c('cm',t);};
+var nm=function(t){return c('num',t);};
+var tp=function(t){return c('type',t);};
+
+function pre(code){return '<pre><code>'+code+'</code></pre>';}
+function note(html){return '<div class="note">'+html+'</div>';}
+function warn(html){return '<div class="warn">'+html+'</div>';}
+function h3(text){return '<div class="concept"><h3>'+text+'</h3>';}
+function end(){return '</div>';}
+
+var topics = [
+  // ── STAGE 1 ──────────────────────────────────────────────────────
+  {stage:0, title:"Syntax, variables & types", sub:"The building blocks of every Go program", tags:["variables","types","constants","zero values"],
+   content: function(){
+    return h3("3 ways to declare variables")+
+    pre(
+      cm("// Way 1: explicit type")+'\n'+
+      kw('var')+' name '+tp('string')+' = '+st('"Alice"')+'\n\n'+
+      cm("// Way 2: short declaration — most common inside functions")+'\n'+
+      'name := '+st('"Alice"')+'\n\n'+
+      cm("// Way 3: zero value")+'\n'+
+      kw('var')+' count '+tp('int')+'    '+cm('// 0')+'\n'+
+      kw('var')+' ready '+tp('bool')+'   '+cm('// false')+'\n'+
+      kw('var')+' label '+tp('string')+' '+cm('// ""')
+    )+
+    note('<strong>Node comparison:</strong> <code>let name = "Alice"</code> &rarr; Go: <code>name := "Alice"</code>')+
+    end()+
+
+    h3("Basic types")+
+    pre(
+      kw('var')+' age     '+tp('int')+'     = '+nm('25')+'\n'+
+      kw('var')+' price   '+tp('float64')+' = '+nm('9.99')+'\n'+
+      kw('var')+' name    '+tp('string')+'  = '+st('"Go"')+'\n'+
+      kw('var')+' active  '+tp('bool')+'    = '+kw('true')+'\n'+
+      kw('var')+' port    '+tp('int32')+'   = '+nm('8080')
+    )+end()+
+
+    h3("Constants & iota")+
+    pre(
+      kw('const')+' MaxRetries = '+nm('3')+'\n'+
+      kw('const')+' AppName = '+st('"my-api"')+'\n\n'+
+      cm('// iota = auto-incrementing enum')+'\n'+
+      kw('const')+' (\n'+
+      '    StatusPending = '+kw('iota')+' '+cm('// 0')+'\n'+
+      '    StatusRunning        '+cm('// 1')+'\n'+
+      '    StatusDone           '+cm('// 2')+'\n'+
+      ')'
+    )+end()+
+
+    h3("Node.js vs Go")+
+    '<table><tr><th>Node.js</th><th>Go</th></tr>'+
+    '<tr><td>let x = 5</td><td>x := 5</td></tr>'+
+    '<tr><td>const x = 5</td><td>const x = 5</td></tr>'+
+    '<tr><td>dynamic types</td><td>static compile-time types</td></tr>'+
+    '<tr><td>undefined / null</td><td>zero values (0, "", false, nil)</td></tr>'+
+    '<tr><td>no int/float distinction</td><td>int, int32, float64 are separate</td></tr>'+
+    '</table>'+end()+
+    warn('<strong>Rule:</strong> Unused variables are a compile error. Every declared variable must be used.');
+  }},
+
+  {stage:0, title:"Functions & multiple returns", sub:"Go's most distinctive feature from day one", tags:["functions","multiple returns","error pattern","closures"],
+   content: function(){
+    return h3("Basic function syntax")+
+    pre(
+      cm('// types go AFTER parameter names')+'\n'+
+      kw('func')+' '+fn('add')+'(a, b '+tp('int')+') '+tp('int')+' {\n'+
+      '    '+kw('return')+' a + b\n}'
+    )+end()+
+
+    h3("Multiple return values")+
+    pre(
+      kw('func')+' '+fn('divide')+'(a, b '+tp('float64')+') ('+tp('float64')+', '+tp('error')+') {\n'+
+      '    '+kw('if')+' b == '+nm('0')+' {\n'+
+      '        '+kw('return')+' '+nm('0')+', errors.'+fn('New')+'('+st('"cannot divide by zero"')+')\n'+
+      '    }\n'+
+      '    '+kw('return')+' a / b, '+kw('nil')+'\n'+
+      '}\n\n'+
+      cm('// calling it')+'\n'+
+      'result, err := '+fn('divide')+'('+nm('10')+', '+nm('2')+')\n'+
+      kw('if')+' err != '+kw('nil')+' {\n'+
+      '    log.'+fn('Fatal')+'(err)\n'+
+      '}\n'+
+      'fmt.'+fn('Println')+'(result) '+cm('// 5')+'\n\n'+
+      cm('// ignore return value with _')+'\n'+
+      'result, _ := '+fn('divide')+'('+nm('10')+', '+nm('2')+')'
+    )+
+    note('<strong>The Go error pattern:</strong> every function that can fail returns <code>(result, error)</code>.')+
+    end()+
+
+    h3("Variadic functions")+
+    pre(
+      kw('func')+' '+fn('sum')+'(nums ...'+tp('int')+') '+tp('int')+' {\n'+
+      '    total := '+nm('0')+'\n'+
+      '    '+kw('for')+' _, n := '+kw('range')+' nums { total += n }\n'+
+      '    '+kw('return')+' total\n'+
+      '}\n\n'+
+      fn('sum')+'('+nm('1')+', '+nm('2')+', '+nm('3')+')   '+cm('// 6')+'\n'+
+      'nums := []'+tp('int')+'{'+ nm('1')+','+nm('2')+','+nm('3')+'}\n'+
+      fn('sum')+'(nums...)    '+cm('// spread slice')
+    )+end()+
+
+    h3("Closures")+
+    pre(
+      kw('func')+' '+fn('counter')+'() '+kw('func')+'() '+tp('int')+' {\n'+
+      '    count := '+nm('0')+'\n'+
+      '    '+kw('return')+' '+kw('func')+'() '+tp('int')+' {\n'+
+      '        count++\n'+
+      '        '+kw('return')+' count\n'+
+      '    }\n'+
+      '}\n'+
+      'c := '+fn('counter')+'()\n'+
+      'c() '+cm('// 1')+'\n'+
+      'c() '+cm('// 2')
+    )+end();
+  }},
+
+  {stage:0, title:"Control flow", sub:"if, for, switch — Go has only one loop keyword", tags:["if","for","switch","range"],
+   content: function(){
+    return h3("if — with init statement")+
+    pre(
+      kw('if')+' x > '+nm('10')+' {\n'+
+      '    fmt.'+fn('Println')+'('+st('"big"')+')\n'+
+      '} '+kw('else if')+' x > '+nm('5')+' {\n'+
+      '    fmt.'+fn('Println')+'('+st('"medium"')+')\n'+
+      '} '+kw('else')+' {\n'+
+      '    fmt.'+fn('Println')+'('+st('"small"')+')\n'+
+      '}\n\n'+
+      cm('// init statement — common with errors')+'\n'+
+      kw('if')+' err := '+fn('doSomething')+'(); err != '+kw('nil')+' {\n'+
+      '    '+kw('return')+' err\n}'
+    )+end()+
+
+    h3("for — the only loop")+
+    pre(
+      cm('// classic')+'\n'+
+      kw('for')+' i := '+nm('0')+'; i < '+nm('5')+'; i++ {\n'+
+      '    fmt.'+fn('Println')+'(i)\n'+
+      '}\n\n'+
+      cm('// while-style')+'\n'+
+      kw('for')+' x < '+nm('100')+' { x *= '+nm('2')+' }\n\n'+
+      cm('// range over slice')+'\n'+
+      'nums := []'+tp('int')+'{'+ nm('10')+', '+nm('20')+', '+nm('30')+'}\n'+
+      kw('for')+' i, v := '+kw('range')+' nums {\n'+
+      '    fmt.'+fn('Println')+'(i, v)\n'+
+      '}\n\n'+
+      cm('// skip index')+'\n'+
+      kw('for')+' _, v := '+kw('range')+' nums { fmt.'+fn('Println')+'(v) }'
+    )+end()+
+
+    h3("switch")+
+    pre(
+      cm('// no break needed — no fallthrough by default')+'\n'+
+      kw('switch')+' status {\n'+
+      kw('case')+' '+st('"pending"')+':\n'+
+      '    fmt.'+fn('Println')+'('+st('"waiting"')+')\n'+
+      kw('case')+' '+st('"done"')+':\n'+
+      '    fmt.'+fn('Println')+'('+st('"finished"')+')\n'+
+      kw('default')+':\n'+
+      '    fmt.'+fn('Println')+'('+st('"unknown"')+')\n'+
+      '}'
+    )+
+    note('<strong>Node difference:</strong> switch cases do NOT fall through. No need for <code>break</code>.')+
+    end();
+  }},
+
+  {stage:0, title:"Arrays, slices & maps", sub:"Go's core data structures", tags:["arrays","slices","maps","make"],
+   content: function(){
+    return h3("Slices — dynamic arrays, use these always")+
+    pre(
+      cm('// literal')+'\n'+
+      'nums := []'+tp('int')+'{'+ nm('1')+', '+nm('2')+', '+nm('3')+'}\n\n'+
+      cm('// make(type, length, capacity)')+'\n'+
+      's := '+fn('make')+'([]'+tp('int')+', '+nm('0')+', '+nm('10')+') '+cm('// empty, capacity 10')+'\n\n'+
+      cm('// append')+'\n'+
+      'nums = '+fn('append')+'(nums, '+nm('4')+', '+nm('5')+')  '+cm('// [1,2,3,4,5]')+'\n\n'+
+      cm('// slicing')+'\n'+
+      'nums['+nm('1')+':'+nm('3')+']  '+cm('// [2,3]')+'\n'+
+      'nums[:'+nm('2')+']   '+cm('// [1,2]')+'\n'+
+      'nums['+nm('2')+':'+']   '+cm('// [3,4,5]')+'\n\n'+
+      fn('len')+'(nums) '+cm('// 5')
+    )+
+    note('<strong>Node comparison:</strong> Slices are Go arrays. <code>append</code> = <code>.push()</code>. <code>[1:3]</code> = <code>.slice(1,3)</code>')+
+    end()+
+
+    h3("Maps — key/value store")+
+    pre(
+      'user := '+kw('map')+'['+tp('string')+']'+tp('string')+'{\n'+
+      '    '+st('"name"')+': '+st('"Alice"')+',\n'+
+      '    '+st('"role"')+': '+st('"admin"')+',\n'+
+      '}\n\n'+
+      cm('// set / get')+'\n'+
+      'user['+st('"age"')+'] = '+st('"30"')+'\n'+
+      'fmt.'+fn('Println')+'(user['+st('"name"')+']) '+cm('// Alice')+'\n\n'+
+      cm('// check if key exists')+'\n'+
+      'val, ok := user['+st('"missing"')+']\n'+
+      kw('if')+' !ok { fmt.'+fn('Println')+'('+st('"not found"')+') }\n\n'+
+      cm('// delete')+'\n'+
+      fn('delete')+'(user, '+st('"age"')+')\n\n'+
+      cm('// iterate')+'\n'+
+      kw('for')+' key, val := '+kw('range')+' user {\n'+
+      '    fmt.'+fn('Println')+'(key, val)\n}'
+    )+end();
+  }},
+
+  {stage:0, title:"Structs & methods", sub:"Go's answer to classes — no inheritance, just composition", tags:["structs","methods","embedding"],
+   content: function(){
+    return h3("Defining a struct")+
+    pre(
+      kw('type')+' '+tp('User')+' '+kw('struct')+' {\n'+
+      '    ID     '+tp('int')+'\n'+
+      '    Name   '+tp('string')+'\n'+
+      '    Email  '+tp('string')+'\n'+
+      '    Active '+tp('bool')+'\n'+
+      '}\n\n'+
+      cm('// create instance')+'\n'+
+      'u := '+tp('User')+'{'+'ID: '+nm('1')+', Name: '+st('"Alice"')+', Active: '+kw('true')+'}\n\n'+
+      cm('// constructor function (Go convention)')+'\n'+
+      kw('func')+' '+fn('NewUser')+'(name, email '+tp('string')+') *'+tp('User')+' {\n'+
+      '    '+kw('return')+' &'+tp('User')+'{'+'Name: name, Email: email, Active: '+kw('true')+'}\n}'
+    )+
+    note('<strong>No classes in Go.</strong> Structs hold data. Methods are functions attached to structs.')+
+    end()+
+
+    h3("Methods — value vs pointer receiver")+
+    pre(
+      cm('// value receiver — gets a copy, cannot modify')+'\n'+
+      kw('func')+' (u '+tp('User')+') '+fn('Greet')+'() '+tp('string')+' {\n'+
+      '    '+kw('return')+' '+st('"Hello, "')+' + u.Name\n'+
+      '}\n\n'+
+      cm('// pointer receiver — modifies the original')+'\n'+
+      kw('func')+' (u *'+tp('User')+') '+fn('Deactivate')+'() {\n'+
+      '    u.Active = '+kw('false')+'\n'+
+      '}\n\n'+
+      'u := '+fn('NewUser')+'('+st('"Alice"')+', '+st('"a@x.com"')+')\n'+
+      'fmt.'+fn('Println')+'(u.'+fn('Greet')+'())  '+cm('// Hello, Alice')+'\n'+
+      'u.'+fn('Deactivate')+'()     '+cm('// u.Active = false')
+    )+end()+
+
+    h3("Embedding — Go's composition")+
+    pre(
+      kw('type')+' '+tp('Timestamps')+' '+kw('struct')+' {\n'+
+      '    CreatedAt time.Time\n'+
+      '    UpdatedAt time.Time\n'+
+      '}\n\n'+
+      kw('type')+' '+tp('Post')+' '+kw('struct')+' {\n'+
+      '    '+tp('Timestamps')+'        '+cm('// embedded — fields promoted')+'\n'+
+      '    Title   '+tp('string')+'\n'+
+      '    Content '+tp('string')+'\n'+
+      '}\n\n'+
+      'p := '+tp('Post')+'{'+'}\n'+
+      'p.CreatedAt '+cm('// works directly')
+    )+end();
+  }},
+
+  {stage:0, title:"Pointers", sub:"Memory references — critical for methods and performance", tags:["pointers","&","*","nil"],
+   content: function(){
+    return h3("What is a pointer?")+
+    pre(
+      'x := '+nm('42')+'\n'+
+      'p := &x        '+cm('// p holds the memory address of x')+'\n'+
+      'fmt.'+fn('Println')+'(*p) '+cm('// 42 — dereference: get value at address')+'\n\n'+
+      '*p = '+nm('100')+'       '+cm('// change x through the pointer')+'\n'+
+      'fmt.'+fn('Println')+'(x)  '+cm('// 100')
+    )+
+    note('<code>&x</code> = address of x &nbsp;|&nbsp; <code>*p</code> = value at address p')+
+    end()+
+
+    h3("Why pointers matter for structs")+
+    pre(
+      cm('// WITHOUT pointer — modifies copy only')+'\n'+
+      kw('func')+' '+fn('setBad')+'(u '+tp('User')+') {\n'+
+      '    u.Name = '+st('"Bob"')+'  '+cm('// original unchanged')+'\n'+
+      '}\n\n'+
+      cm('// WITH pointer — modifies original')+'\n'+
+      kw('func')+' '+fn('setGood')+'(u *'+tp('User')+') {\n'+
+      '    u.Name = '+st('"Bob"')+'  '+cm('// real struct updated')+'\n'+
+      '}\n\n'+
+      'u := '+tp('User')+'{'+'Name: '+st('"Alice"')+'}\n'+
+      fn('setBad')+'(u)    '+cm('// u.Name still Alice')+'\n'+
+      fn('setGood')+'(&u)  '+cm('// u.Name now Bob')
+    )+end()+
+    warn('<strong>Dereferencing a nil pointer = panic.</strong> Always check for nil before using a pointer.');
+  }},
+
+  // ── STAGE 2 ──────────────────────────────────────────────────────
+  {stage:1, title:"Interfaces", sub:"Go's most powerful abstraction — implicit, not explicit", tags:["interface","duck typing","polymorphism"],
+   content: function(){
+    return h3("Defining and implementing interfaces")+
+    pre(
+      kw('type')+' '+tp('Animal')+' '+kw('interface')+' {\n'+
+      '    '+fn('Sound')+'() '+tp('string')+'\n'+
+      '    '+fn('Name')+'()  '+tp('string')+'\n'+
+      '}\n\n'+
+      cm('// implement — NO "implements" keyword')+'\n'+
+      kw('type')+' '+tp('Dog')+' '+kw('struct')+'{'+'}\n'+
+      kw('func')+' (d '+tp('Dog')+') '+fn('Sound')+'() '+tp('string')+' { '+kw('return')+' '+st('"Woof"')+' }\n'+
+      kw('func')+' (d '+tp('Dog')+') '+fn('Name')+'()  '+tp('string')+' { '+kw('return')+' '+st('"Dog"')+' }\n\n'+
+      cm('// use the interface')+'\n'+
+      kw('func')+' '+fn('describe')+'(a '+tp('Animal')+') {\n'+
+      '    fmt.'+fn('Printf')+'('+st('"%s says %s"')+', a.'+fn('Name')+'(), a.'+fn('Sound')+'())\n'+
+      '}\n'+
+      fn('describe')+'('+tp('Dog')+'{'+'}) '+cm('// Dog says Woof')
+    )+
+    note('<strong>Implicit implementation:</strong> if a type has all required methods it automatically satisfies the interface. No <code>implements</code> keyword.')+
+    end()+
+
+    h3("Type assertions & type switch")+
+    pre(
+      kw('var')+' v '+kw('any')+' = '+st('"hello"')+'\n\n'+
+      cm('// type assertion')+'\n'+
+      's, ok := v.('+tp('string')+')\n'+
+      kw('if')+' ok { fmt.'+fn('Println')+'(s) }\n\n'+
+      cm('// type switch')+'\n'+
+      kw('switch')+' t := v.('+kw('type')+') {\n'+
+      kw('case')+' '+tp('string')+':  fmt.'+fn('Println')+'('+st('"string:"')+', t)\n'+
+      kw('case')+' '+tp('int')+'  :  fmt.'+fn('Println')+'('+st('"int:"')+', t)\n'+
+      kw('default')+'  :  fmt.'+fn('Println')+'('+st('"unknown"')+')\n}'
+    )+end();
+  }},
+
+  {stage:1, title:"Error handling", sub:"Go's explicit, unavoidable error model", tags:["error","errors.New","fmt.Errorf","custom errors"],
+   content: function(){
+    return h3("Creating errors")+
+    pre(
+      'err1 := errors.'+fn('New')+'('+st('"something went wrong"')+')\n'+
+      'err2 := fmt.'+fn('Errorf')+'('+st('"user %d not found"')+', userID)\n\n'+
+      cm('// wrap errors (adds context, use %w)')+'\n'+
+      'err3 := fmt.'+fn('Errorf')+'('+st('"getUser: %w"')+', err)'
+    )+end()+
+
+    h3("Custom error types")+
+    pre(
+      kw('type')+' '+tp('NotFoundError')+' '+kw('struct')+' {\n'+
+      '    ID  '+tp('int')+'\n'+
+      '    Msg '+tp('string')+'\n'+
+      '}\n\n'+
+      kw('func')+' (e *'+tp('NotFoundError')+') '+fn('Error')+'() '+tp('string')+' {\n'+
+      '    '+kw('return')+' fmt.'+fn('Sprintf')+'('+st('"id %d: %s"')+', e.ID, e.Msg)\n'+
+      '}\n\n'+
+      cm('// check error type')+'\n'+
+      kw('var')+' nfe *'+tp('NotFoundError')+'\n'+
+      kw('if')+' errors.'+fn('As')+'(err, &nfe) {\n'+
+      '    fmt.'+fn('Println')+'('+st('"not found:"')+', nfe.ID)\n}'
+    )+end()+
+
+    h3("Real API handler pattern")+
+    pre(
+      kw('func')+' '+fn('getUser')+'(id '+tp('int')+') (*'+tp('User')+', '+tp('error')+') {\n'+
+      '    user, err := db.'+fn('Find')+'(id)\n'+
+      '    '+kw('if')+' err != '+kw('nil')+' {\n'+
+      '        '+kw('return')+' '+kw('nil')+', fmt.'+fn('Errorf')+'('+st('"getUser: %w"')+', err)\n'+
+      '    }\n'+
+      '    '+kw('return')+' user, '+kw('nil')+'\n'+
+      '}'
+    )+
+    note('<strong>Go philosophy:</strong> errors are values. Handle them where they happen. Never silently swallow an error.')+
+    end();
+  }},
+
+  {stage:1, title:"Packages & modules", sub:"How Go organizes and shares code", tags:["package","module","go.mod","import"],
+   content: function(){
+    return h3("Package basics")+
+    pre(
+      cm('// every file starts with a package declaration')+'\n'+
+      kw('package')+' main   '+cm('// executable')+'\n'+
+      kw('package')+' user   '+cm('// library package')+'\n\n'+
+      cm('// main is the entry point')+'\n'+
+      kw('func')+' '+fn('main')+'() {\n'+
+      '    fmt.'+fn('Println')+'('+st('"server started"')+')\n}'
+    )+end()+
+
+    h3("Exported vs unexported")+
+    pre(
+      cm('// Uppercase = exported (public)')+'\n'+
+      kw('func')+' '+fn('GetUser')+'() {}   '+cm('// accessible outside package')+'\n\n'+
+      cm('// lowercase = unexported (private)')+'\n'+
+      kw('func')+' '+fn('validate')+'() {}  '+cm('// only inside this package')
+    )+
+    note('<strong>Visibility rule:</strong> Uppercase = public, lowercase = private. No keywords needed.')+
+    end()+
+
+    h3("go.mod — like package.json")+
+    pre(
+      'module github.com/alice/myapi\n\n'+
+      'go '+nm('1.22')+'\n\n'+
+      'require (\n'+
+      '    github.com/gin-gonic/gin v'+nm('1.9.1')+'\n'+
+      '    github.com/lib/pq        v'+nm('1.10.9')+'\n)'
+    )+end()+
+
+    h3("Project structure")+
+    pre(
+      'myapi/\n'+
+      '&#x251C;&#x2500;&#x2500; main.go\n'+
+      '&#x251C;&#x2500;&#x2500; go.mod\n'+
+      '&#x251C;&#x2500;&#x2500; handler/\n'+
+      '&#x2502;   &#x2514;&#x2500;&#x2500; user.go   '+cm('// HTTP layer')+'\n'+
+      '&#x251C;&#x2500;&#x2500; service/\n'+
+      '&#x2502;   &#x2514;&#x2500;&#x2500; user.go   '+cm('// business logic')+'\n'+
+      '&#x251C;&#x2500;&#x2500; store/\n'+
+      '&#x2502;   &#x2514;&#x2500;&#x2500; user.go   '+cm('// SQL queries')+'\n'+
+      '&#x2514;&#x2500;&#x2500; model/\n'+
+      '    &#x2514;&#x2500;&#x2500; user.go   '+cm('// shared types')
+    )+end();
+  }},
+
+  {stage:1, title:"Defer, panic & recover", sub:"Cleanup, crashes and recovery", tags:["defer","panic","recover"],
+   content: function(){
+    return h3("defer — runs at end of function")+
+    pre(
+      kw('func')+' '+fn('readFile')+'(path '+tp('string')+') {\n'+
+      '    f, err := os.'+fn('Open')+'(path)\n'+
+      '    '+kw('if')+' err != '+kw('nil')+' { '+kw('return')+' }\n'+
+      '    '+kw('defer')+' f.'+fn('Close')+'()  '+cm('// always runs when function exits')+'\n'+
+      '    '+cm('// even if panic happens, f.Close() runs')+'\n'+
+      '}\n\n'+
+      cm('// multiple defers — LIFO order')+'\n'+
+      kw('defer')+' fmt.'+fn('Println')+'('+st('"first"')+')\n'+
+      kw('defer')+' fmt.'+fn('Println')+'('+st('"second"')+')\n'+
+      kw('defer')+' fmt.'+fn('Println')+'('+st('"third"')+') '+cm('// runs first')
+    )+
+    note('<strong>Most common use:</strong> closing DB connections, unlocking mutexes, closing response bodies.')+
+    end()+
+
+    h3("panic & recover")+
+    pre(
+      cm('// panic = runtime crash')+'\n'+
+      kw('if')+' db == '+kw('nil')+' {\n'+
+      '    '+fn('panic')+'('+st('"no database connection"')+')\n'+
+      '}\n\n'+
+      cm('// recover — catch a panic (use in middleware)')+'\n'+
+      kw('func')+' '+fn('safeHandler')+'(next http.HandlerFunc) http.HandlerFunc {\n'+
+      '    '+kw('return')+' '+kw('func')+'(w http.ResponseWriter, r *http.Request) {\n'+
+      '        '+kw('defer')+' '+kw('func')+'() {\n'+
+      '            '+kw('if')+' err := '+fn('recover')+'(); err != '+kw('nil')+' {\n'+
+      '                http.'+fn('Error')+'(w, '+st('"internal error"')+', '+nm('500')+')\n'+
+      '            }\n'+
+      '        }()\n'+
+      '        '+fn('next')+'(w, r)\n'+
+      '    }\n}'
+    )+
+    warn('<strong>Rule:</strong> use panic only for unrecoverable startup failures. For everything else, return an error.')+
+    end();
+  }},
+
+  {stage:1, title:"Generics", sub:"Type-safe code that works across multiple types", tags:["generics","type parameters","constraints"],
+   content: function(){
+    return h3("The problem generics solve")+
+    pre(
+      cm('// without generics — need one function per type')+'\n'+
+      kw('func')+' '+fn('sumInts')+'(nums []'+tp('int')+') '+tp('int')+' { ... }\n'+
+      kw('func')+' '+fn('sumFloats')+'(nums []'+tp('float64')+') '+tp('float64')+' { ... }\n\n'+
+      cm('// with generics — one function works for both')+'\n'+
+      kw('func')+' '+fn('sum')+'[T '+tp('int')+' | '+tp('float64')+']'+'(nums []T) T {\n'+
+      '    '+kw('var')+' total T\n'+
+      '    '+kw('for')+' _, n := '+kw('range')+' nums { total += n }\n'+
+      '    '+kw('return')+' total\n'+
+      '}\n\n'+
+      fn('sum')+'([]'+tp('int')+'{'+ nm('1')+', '+nm('2')+', '+nm('3')+'})       '+cm('// 6')+'\n'+
+      fn('sum')+'([]'+tp('float64')+'{'+ nm('1.1')+', '+nm('2.2')+'}) '+cm('// 3.3')
+    )+end()+
+
+    h3("Generic data structures")+
+    pre(
+      kw('type')+' '+tp('Stack')+'[T '+kw('any')+'] '+kw('struct')+' {\n'+
+      '    items []T\n'+
+      '}\n\n'+
+      kw('func')+' (s *'+tp('Stack')+'[T]) '+fn('Push')+'(v T)  { s.items = '+fn('append')+'(s.items, v) }\n'+
+      kw('func')+' (s *'+tp('Stack')+'[T]) '+fn('Pop')+'() T {\n'+
+      '    n := '+fn('len')+'(s.items) - '+nm('1')+'\n'+
+      '    v := s.items[n]\n'+
+      '    s.items = s.items[:n]\n'+
+      '    '+kw('return')+' v\n'+
+      '}\n\n'+
+      's := '+tp('Stack')+'['+tp('int')+']{'+'}\n'+
+      's.'+fn('Push')+'('+nm('1')+'); s.'+fn('Push')+'('+nm('2')+')\n'+
+      's.'+fn('Pop')+'() '+cm('// 2')
+    )+
+    note('Generics added in Go 1.18. Useful for utility functions and reusable data structures.')+
+    end();
+  }},
+
+  // ── STAGE 3 ──────────────────────────────────────────────────────
+  {stage:2, title:"Goroutines", sub:"Lightweight concurrent functions — Go's superpower", tags:["goroutine","go keyword","concurrency"],
+   content: function(){
+    return h3("Spawning a goroutine")+
+    pre(
+      cm('// just add the go keyword')+'\n'+
+      kw('go')+' '+fn('doWork')+'()\n\n'+
+      cm('// anonymous goroutine')+'\n'+
+      kw('go')+' '+kw('func')+'() {\n'+
+      '    fmt.'+fn('Println')+'('+st('"running in background"')+')\n'+
+      '}()\n\n'+
+      cm('// handle each request concurrently')+'\n'+
+      kw('for')+' _, req := '+kw('range')+' requests {\n'+
+      '    req := req '+cm('// capture loop variable!')+'\n'+
+      '    '+kw('go')+' '+fn('handleRequest')+'(req)\n}'
+    )+
+    warn('<strong>Capture loop variables</strong> with <code>req := req</code> inside the loop, otherwise all goroutines share the same variable.')+
+    end()+
+
+    h3("WaitGroup — wait for goroutines to finish")+
+    pre(
+      kw('var')+' wg sync.WaitGroup\n\n'+
+      kw('for')+' i := '+nm('0')+'; i < '+nm('5')+'; i++ {\n'+
+      '    wg.'+fn('Add')+'('+nm('1')+')\n'+
+      '    '+kw('go')+' '+kw('func')+'(id '+tp('int')+') {\n'+
+      '        '+kw('defer')+' wg.'+fn('Done')+'()\n'+
+      '        fmt.'+fn('Println')+'('+st('"worker"')+', id)\n'+
+      '    }(i)\n'+
+      '}\n\n'+
+      'wg.'+fn('Wait')+'() '+cm('// blocks until all 5 call Done()')+'\n'+
+      'fmt.'+fn('Println')+'('+st('"all done"')+')'
+    )+end();
+  }},
+
+  {stage:2, title:"Channels", sub:"Goroutines communicate by passing values through channels", tags:["channel","make","send","receive","buffered"],
+   content: function(){
+    return h3("Basic channels")+
+    pre(
+      cm('// create')+'\n'+
+      'ch := '+fn('make')+'('+kw('chan')+' '+tp('int')+')\n\n'+
+      cm('// send (blocks until someone receives)')+'\n'+
+      'ch <- '+nm('42')+'\n\n'+
+      cm('// receive (blocks until someone sends)')+'\n'+
+      'val := <-ch\n\n'+
+      cm('// goroutine sending, main receiving')+'\n'+
+      kw('go')+' '+kw('func')+'() { ch <- '+nm('42')+' }()\n'+
+      'result := <-ch\n'+
+      'fmt.'+fn('Println')+'(result) '+cm('// 42')
+    )+end()+
+
+    h3("Buffered channels")+
+    pre(
+      cm('// buffered — send doesnt block until buffer full')+'\n'+
+      'ch := '+fn('make')+'('+kw('chan')+' '+tp('int')+', '+nm('3')+')\n'+
+      'ch <- '+nm('1')+'  '+cm('// ok')+'\n'+
+      'ch <- '+nm('2')+'  '+cm('// ok')+'\n'+
+      'ch <- '+nm('3')+'  '+cm('// ok')+'\n'+
+      'ch <- '+nm('4')+'  '+cm('// BLOCKS — buffer full')+'\n\n'+
+      cm('// close and range')+'\n'+
+      fn('close')+'(ch)\n'+
+      kw('for')+' v := '+kw('range')+' ch { fmt.'+fn('Println')+'(v) }'
+    )+
+    note('<strong>Go proverb:</strong> "Don\'t communicate by sharing memory; share memory by communicating."')+
+    end();
+  }},
+
+  {stage:2, title:"Select statement", sub:"Wait on multiple channels simultaneously", tags:["select","timeout","non-blocking"],
+   content: function(){
+    return h3("Select — like switch for channels")+
+    pre(
+      kw('select')+' {\n'+
+      kw('case')+' msg := <-ch1:\n'+
+      '    fmt.'+fn('Println')+'('+st('"from ch1:"')+', msg)\n'+
+      kw('case')+' msg := <-ch2:\n'+
+      '    fmt.'+fn('Println')+'('+st('"from ch2:"')+', msg)\n'+
+      kw('default')+':\n'+
+      '    fmt.'+fn('Println')+'('+st('"no message ready"')+')\n}'
+    )+end()+
+
+    h3("Timeout pattern — critical for APIs")+
+    pre(
+      kw('func')+' '+fn('fetchWithTimeout')+'(url '+tp('string')+') ('+tp('string')+', '+tp('error')+') {\n'+
+      '    result := '+fn('make')+'('+kw('chan')+' '+tp('string')+')\n\n'+
+      '    '+kw('go')+' '+kw('func')+'() { result <- '+fn('httpGet')+'(url) }()\n\n'+
+      '    '+kw('select')+' {\n'+
+      '    '+kw('case')+' r := <-result:\n'+
+      '        '+kw('return')+' r, '+kw('nil')+'\n'+
+      '    '+kw('case')+' <-time.'+fn('After')+'('+nm('3')+' * time.Second):\n'+
+      '        '+kw('return')+' '+st('""')+', errors.'+fn('New')+'('+st('"timeout"')+')\n'+
+      '    }\n}'
+    )+end();
+  }},
+
+  {stage:2, title:"sync.WaitGroup & Mutex", sub:"Coordinate goroutines and protect shared data", tags:["WaitGroup","Mutex","RWMutex","race condition"],
+   content: function(){
+    return h3("Mutex — prevent race conditions")+
+    pre(
+      kw('type')+' '+tp('SafeCounter')+' '+kw('struct')+' {\n'+
+      '    mu    sync.Mutex\n'+
+      '    count '+tp('int')+'\n'+
+      '}\n\n'+
+      kw('func')+' (c *'+tp('SafeCounter')+') '+fn('Inc')+'() {\n'+
+      '    c.mu.'+fn('Lock')+'()\n'+
+      '    '+kw('defer')+' c.mu.'+fn('Unlock')+'()\n'+
+      '    c.count++\n'+
+      '}'
+    )+
+    warn('<strong>Race condition:</strong> two goroutines reading/writing the same variable without a mutex gives unpredictable results.')+
+    end()+
+
+    h3("RWMutex — for read-heavy workloads")+
+    pre(
+      kw('var')+' mu sync.RWMutex\n'+
+      kw('var')+' cache = '+fn('make')+'('+kw('map')+'['+tp('string')+']'+tp('string')+')\n\n'+
+      cm('// multiple readers at once')+'\n'+
+      kw('func')+' '+fn('get')+'(key '+tp('string')+') '+tp('string')+' {\n'+
+      '    mu.'+fn('RLock')+'(); '+kw('defer')+' mu.'+fn('RUnlock')+'()\n'+
+      '    '+kw('return')+' cache[key]\n'+
+      '}\n\n'+
+      cm('// only one writer at a time')+'\n'+
+      kw('func')+' '+fn('set')+'(key, val '+tp('string')+') {\n'+
+      '    mu.'+fn('Lock')+'(); '+kw('defer')+' mu.'+fn('Unlock')+'()\n'+
+      '    cache[key] = val\n}'
+    )+end();
+  }},
+
+  {stage:2, title:"Context package", sub:"Cancel, timeout and pass values across goroutines", tags:["context","cancel","timeout","deadline"],
+   content: function(){
+    return h3("Why context exists")+
+    pre(
+      cm('// context carries: cancellation, deadline, request values')+'\n'+
+      kw('func')+' '+fn('handler')+'(w http.ResponseWriter, r *http.Request) {\n'+
+      '    ctx := r.'+fn('Context')+'() '+cm('// cancelled when client disconnects')+'\n'+
+      '    result, err := db.'+fn('QueryContext')+'(ctx, '+st('"SELECT ..."')+')\n'+
+      '    '+cm('// if client disconnects, query cancels automatically')+'\n}'
+    )+end()+
+
+    h3("Creating contexts")+
+    pre(
+      cm('// with cancel')+'\n'+
+      'ctx, cancel := context.'+fn('WithCancel')+'(context.'+fn('Background')+'())\n'+
+      kw('defer')+' '+fn('cancel')+'() '+cm('// always call cancel to free resources')+'\n\n'+
+      cm('// with timeout')+'\n'+
+      'ctx, cancel := context.'+fn('WithTimeout')+'(context.'+fn('Background')+'(), '+nm('5')+'*time.Second)\n'+
+      kw('defer')+' '+fn('cancel')+'()\n\n'+
+      cm('// with value')+'\n'+
+      'ctx = context.'+fn('WithValue')+'(ctx, '+st('"userID"')+', '+nm('42')+')\n'+
+      'userID := ctx.'+fn('Value')+'('+st('"userID"')+').('+tp('int')+')'
+    )+
+    note('<strong>Rule:</strong> always pass <code>ctx</code> as the first argument to any function doing I/O.')+
+    end();
+  }},
+
+  // ── STAGE 4 ──────────────────────────────────────────────────────
+  {stage:3, title:"net/http server", sub:"Build a real HTTP server with Go's standard library", tags:["http","handler","ServeMux","ListenAndServe"],
+   content: function(){
+    return h3("Minimal HTTP server")+
+    pre(
+      kw('package')+' main\n\n'+
+      kw('import')+' (\n'+
+      '    '+st('"fmt"')+'\n'+
+      '    '+st('"net/http"')+'\n'+
+      ')\n\n'+
+      kw('func')+' '+fn('helloHandler')+'(w http.ResponseWriter, r *http.Request) {\n'+
+      '    fmt.'+fn('Fprintf')+'(w, '+st('"Hello World"')+')\n'+
+      '}\n\n'+
+      kw('func')+' '+fn('main')+'() {\n'+
+      '    mux := http.'+fn('NewServeMux')+'()\n'+
+      '    mux.'+fn('HandleFunc')+'('+st('"GET /hello"')+', helloHandler)\n'+
+      '    mux.'+fn('HandleFunc')+'('+st('"POST /users"')+', createUser)\n'+
+      '    mux.'+fn('HandleFunc')+'('+st('"GET /users/{id}"')+', getUser)\n'+
+      '    http.'+fn('ListenAndServe')+'('+st('":8080"')+', mux)\n}'
+    )+end()+
+
+    h3("Reading request data")+
+    pre(
+      kw('func')+' '+fn('getUser')+'(w http.ResponseWriter, r *http.Request) {\n'+
+      '    id     := r.'+fn('PathValue')+'('+st('"id"')+')\n'+
+      '    active := r.URL.Query().'+fn('Get')+'('+st('"active"')+')\n'+
+      '    token  := r.Header.'+fn('Get')+'('+st('"Authorization"')+')\n\n'+
+      '    w.Header().'+fn('Set')+'('+st('"Content-Type"')+', '+st('"application/json"')+')\n'+
+      '    w.'+fn('WriteHeader')+'(http.StatusOK)\n'+
+      '    fmt.'+fn('Fprintf')+'(w, '+st('"{id:%s}"')+', id)\n}'
+    )+end();
+  }},
+
+  {stage:3, title:"JSON encode & decode", sub:"The bread and butter of every API", tags:["json","Marshal","Unmarshal","struct tags"],
+   content: function(){
+    return h3("Struct tags control JSON keys")+
+    pre(
+      kw('type')+' '+tp('User')+' '+kw('struct')+' {\n'+
+      '    ID        '+tp('int')+'    `json:"id"`\n'+
+      '    Name      '+tp('string')+' `json:"name"`\n'+
+      '    Password  '+tp('string')+' `json:"-"`          '+cm('// never serialized')+'\n'+
+      '    CreatedAt '+tp('string')+' `json:"created_at,omitempty"`\n'+
+      '}'
+    )+end()+
+
+    h3("Encode — struct to JSON")+
+    pre(
+      'user := '+tp('User')+'{'+'ID: '+nm('1')+', Name: '+st('"Alice"')+'}\n\n'+
+      cm('// to HTTP response')+'\n'+
+      'w.Header().'+fn('Set')+'('+st('"Content-Type"')+', '+st('"application/json"')+')\n'+
+      'json.'+fn('NewEncoder')+'(w).'+fn('Encode')+'(user)\n\n'+
+      cm('// to bytes')+'\n'+
+      'data, err := json.'+fn('Marshal')+'(user)'
+    )+end()+
+
+    h3("Decode — JSON to struct")+
+    pre(
+      kw('type')+' '+tp('CreateUserReq')+' '+kw('struct')+' {\n'+
+      '    Name  '+tp('string')+' `json:"name"`\n'+
+      '    Email '+tp('string')+' `json:"email"`\n'+
+      '}\n\n'+
+      kw('func')+' '+fn('createUser')+'(w http.ResponseWriter, r *http.Request) {\n'+
+      '    '+kw('var')+' req '+tp('CreateUserReq')+'\n'+
+      '    '+kw('if')+' err := json.'+fn('NewDecoder')+'(r.Body).'+fn('Decode')+'(&req); err != '+kw('nil')+' {\n'+
+      '        http.'+fn('Error')+'(w, '+st('"bad request"')+', '+nm('400')+')\n'+
+      '        '+kw('return')+'\n'+
+      '    }\n'+
+      '    '+cm('// req.Name and req.Email populated')+'\n}'
+    )+end();
+  }},
+
+  {stage:3, title:"Middleware pattern", sub:"Wrap handlers with reusable logic: auth, logging, recovery", tags:["middleware","handler","chaining","auth"],
+   content: function(){
+    return h3("Middleware is a function that wraps a handler")+
+    pre(
+      cm('// logging middleware')+'\n'+
+      kw('func')+' '+fn('Logger')+'(next http.Handler) http.Handler {\n'+
+      '    '+kw('return')+' http.'+fn('HandlerFunc')+'('+kw('func')+'(w http.ResponseWriter, r *http.Request) {\n'+
+      '        start := time.'+fn('Now')+'()\n'+
+      '        next.'+fn('ServeHTTP')+'(w, r)\n'+
+      '        log.'+fn('Printf')+'('+st('"%s %s %v"')+', r.Method, r.URL.Path, time.'+fn('Since')+'(start))\n'+
+      '    })\n'+
+      '}\n\n'+
+      cm('// auth middleware')+'\n'+
+      kw('func')+' '+fn('Auth')+'(next http.Handler) http.Handler {\n'+
+      '    '+kw('return')+' http.'+fn('HandlerFunc')+'('+kw('func')+'(w http.ResponseWriter, r *http.Request) {\n'+
+      '        '+kw('if')+' r.Header.'+fn('Get')+'('+st('"Authorization"')+') == '+st('""')+' {\n'+
+      '            http.'+fn('Error')+'(w, '+st('"unauthorized"')+', '+nm('401')+')\n'+
+      '            '+kw('return')+'\n'+
+      '        }\n'+
+      '        next.'+fn('ServeHTTP')+'(w, r)\n'+
+      '    })\n}'
+    )+end()+
+
+    h3("Chaining middleware")+
+    pre(
+      'mux := http.'+fn('NewServeMux')+'()\n'+
+      'mux.'+fn('HandleFunc')+'('+st('"GET /users"')+', listUsers)\n\n'+
+      cm('// request goes through Logger, then Auth, then handler')+'\n'+
+      'handler := '+fn('Logger')+'('+fn('Auth')+'(mux))\n'+
+      'http.'+fn('ListenAndServe')+'('+st('":8080"')+', handler)'
+    )+
+    note('<strong>Same as Express middleware</strong> (<code>app.use()</code>), written as function composition instead of a chain.')+
+    end();
+  }},
+
+  {stage:3, title:"Database (pgx)", sub:"Connect to Postgres and run queries safely", tags:["postgres","pgx","sql","query"],
+   content: function(){
+    return h3("Connecting to Postgres")+
+    pre(
+      kw('import')+' '+st('"github.com/jackc/pgx/v5/pgxpool"')+'\n\n'+
+      kw('func')+' '+fn('connect')+'(ctx context.Context) (*pgxpool.Pool, '+tp('error')+') {\n'+
+      '    pool, err := pgxpool.'+fn('New')+'(ctx, os.'+fn('Getenv')+'('+st('"DATABASE_URL"')+'))\n'+
+      '    '+kw('if')+' err != '+kw('nil')+' {\n'+
+      '        '+kw('return')+' '+kw('nil')+', fmt.'+fn('Errorf')+'('+st('"connect: %w"')+', err)\n'+
+      '    }\n'+
+      '    '+kw('return')+' pool, '+kw('nil')+'\n}'
+    )+end()+
+
+    h3("Query patterns")+
+    pre(
+      cm('// single row')+'\n'+
+      kw('var')+' user '+tp('User')+'\n'+
+      'err := pool.'+fn('QueryRow')+'(ctx,\n'+
+      '    '+st('"SELECT id, name FROM users WHERE id=$1"')+', id,\n'+
+      ').'+fn('Scan')+'(&user.ID, &user.Name)\n\n'+
+      cm('// multiple rows')+'\n'+
+      'rows, err := pool.'+fn('Query')+'(ctx, '+st('"SELECT id, name FROM users"')+')\n'+
+      kw('defer')+' rows.'+fn('Close')+'()\n'+
+      kw('for')+' rows.'+fn('Next')+'() {\n'+
+      '    '+kw('var')+' u '+tp('User')+'\n'+
+      '    rows.'+fn('Scan')+'(&u.ID, &u.Name)\n'+
+      '    users = '+fn('append')+'(users, u)\n'+
+      '}\n\n'+
+      cm('// insert/update/delete')+'\n'+
+      '_, err = pool.'+fn('Exec')+'(ctx,\n'+
+      '    '+st('"INSERT INTO users (name, email) VALUES ($1, $2)"')+',\n'+
+      '    user.Name, user.Email,\n)'
+    )+
+    warn('<strong>Always use $1, $2 placeholders</strong> — never string-concatenate SQL. That is an SQL injection vulnerability.')+
+    end();
+  }},
+
+  {stage:3, title:"Project structure", sub:"How to layout a real production Go API", tags:["structure","layers","clean architecture"],
+   content: function(){
+    return h3("Recommended layout")+
+    pre(
+      'myapi/\n'+
+      '&#x251C;&#x2500;&#x2500; main.go              '+cm('// wire everything, start server')+'\n'+
+      '&#x251C;&#x2500;&#x2500; go.mod\n'+
+      '&#x251C;&#x2500;&#x2500; handler/             '+cm('// HTTP: parse req, write resp')+'\n'+
+      '&#x2502;   &#x2514;&#x2500;&#x2500; user.go\n'+
+      '&#x251C;&#x2500;&#x2500; service/             '+cm('// business logic, validation')+'\n'+
+      '&#x2502;   &#x2514;&#x2500;&#x2500; user.go\n'+
+      '&#x251C;&#x2500;&#x2500; store/               '+cm('// SQL queries only')+'\n'+
+      '&#x2502;   &#x2514;&#x2500;&#x2500; user.go\n'+
+      '&#x251C;&#x2500;&#x2500; model/               '+cm('// shared structs/types')+'\n'+
+      '&#x2502;   &#x2514;&#x2500;&#x2500; user.go\n'+
+      '&#x2514;&#x2500;&#x2500; middleware/          '+cm('// auth, logging, recovery')+'\n'+
+      '    &#x2514;&#x2500;&#x2500; auth.go'
+    )+end()+
+
+    h3("The flow of a request")+
+    pre(
+      cm('// HTTP request -> handler -> service -> store -> DB')+'\n\n'+
+      cm('// handler — only HTTP concerns')+'\n'+
+      kw('func')+' (h *'+tp('Handler')+') '+fn('GetUser')+'(w http.ResponseWriter, r *http.Request) {\n'+
+      '    id := r.'+fn('PathValue')+'('+st('"id"')+')\n'+
+      '    user, err := h.svc.'+fn('GetUser')+'(r.'+fn('Context')+'(), id)\n'+
+      '    '+kw('if')+' err != '+kw('nil')+' { http.'+fn('Error')+'(w, err.'+fn('Error')+'(), '+nm('404')+'); '+kw('return')+' }\n'+
+      '    json.'+fn('NewEncoder')+'(w).'+fn('Encode')+'(user)\n'+
+      '}\n\n'+
+      cm('// service — only business logic')+'\n'+
+      kw('func')+' (s *'+tp('Service')+') '+fn('GetUser')+'(ctx context.Context, id '+tp('string')+') (*model.User, '+tp('error')+') {\n'+
+      '    '+kw('if')+' id == '+st('""')+' { '+kw('return')+' '+kw('nil')+', errors.'+fn('New')+'('+st('"id required"')+') }\n'+
+      '    '+kw('return')+' s.store.'+fn('GetUser')+'(ctx, id)\n'+
+      '}\n\n'+
+      cm('// store — only SQL')+'\n'+
+      kw('func')+' (s *'+tp('Store')+') '+fn('GetUser')+'(ctx context.Context, id '+tp('string')+') (*model.User, '+tp('error')+') {\n'+
+      '    '+kw('var')+' u model.User\n'+
+      '    err := s.db.'+fn('QueryRow')+'(ctx, '+st('"SELECT * FROM users WHERE id=$1"')+', id).'+fn('Scan')+'(...)\n'+
+      '    '+kw('return')+' &u, err\n}'
+    )+
+    note('<strong>Each layer only talks to the layer below it.</strong> Handler never touches DB. Store never knows about HTTP.')+
+    end();
+  }}
+];
+
+var current = 0;
+var done = {};
+
+function render(){
+  renderSidebar();
+  renderContent();
+  updateProgress();
+}
+
+function renderSidebar(){
+  var sb = document.getElementById('sidebar');
+  var html = '';
+  var lastStage = -1;
+  for(var i=0;i<topics.length;i++){
+    var t = topics[i];
+    if(t.stage !== lastStage){
+      lastStage = t.stage;
+      html += '<div class="stage-label">'+stages[t.stage].label+'</div>';
+    }
+    var cls = i===current?'active':done[i]?'done':'';
+    html += '<div class="nav-item '+cls+'" onclick="goto('+i+')"><span class="nav-num">'+(i+1)+'</span><span>'+t.title+'</span></div>';
+  }
+  sb.innerHTML = html;
+}
+
+function renderContent(){
+  var t = topics[current];
+  var s = stages[t.stage];
+  var tags = t.tags.map(function(tag){return '<span class="tag">'+tag+'</span>';}).join('');
+  var html = '<div class="stage-header">'+
+    '<span class="stage-badge '+s.badge+'">'+s.badgeText+'</span>'+
+    '<span style="color:#475569;font-size:13px">Topic '+(current+1)+' of '+topics.length+'</span>'+
+    '</div>'+
+    '<div class="topic-title">'+t.title+'</div>'+
+    '<div class="topic-sub">'+t.sub+'</div>'+
+    '<div class="tag-row">'+tags+'</div>'+
+    t.content()+
+    '<div class="nav-btns">'+
+    '<button class="btn btn-prev" onclick="prev()" '+(current===0?'disabled':'')+'>&#8592; Previous</button>'+
+    '<button class="btn btn-next" onclick="next()">'+(current===topics.length-1?'Finish &#10003;':'Next &#8594;')+'</button>'+
+    '</div>';
+  document.getElementById('content').innerHTML = html;
+}
+
+function updateProgress(){
+  document.getElementById('prog').style.width = ((current+1)/topics.length*100)+'%';
+}
+
+function goto(i){done[current]=true;current=i;render();window.scrollTo(0,0);}
+function next(){done[current]=true;if(current<topics.length-1){current++;render();window.scrollTo(0,0);}}
+function prev(){if(current>0){current--;render();window.scrollTo(0,0);}}
+
+render();
+</script>
+</body>
+</html>
