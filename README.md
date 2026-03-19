@@ -52,28 +52,6 @@ real applications step by step.
 
 ------------------------------------------------------------------------
 
-## 🚀 Getting Started
-
-### 1. Clone the repository
-
-``` bash
-git clone https://github.com/shivakrishna1995/go-backend-mastery.git
-```
-
-### 2. Navigate to the project
-
-``` bash
-cd go-backend-mastery
-```
-
-### 3. Run examples (if applicable)
-
-``` bash
-go run main.go
-```
-
-------------------------------------------------------------------------
-
 ## 📖 What You'll Learn
 
 -   Go fundamentals for backend development\
